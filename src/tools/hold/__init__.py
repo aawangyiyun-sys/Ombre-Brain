@@ -37,6 +37,7 @@ async def dispatch(
     pinned: Optional[bool] = False,
     feel: Optional[bool] = False,
     source_bucket: Optional[str] = "",
+    name: Optional[str] = "",
     valence: Optional[float] = -1,
     arousal: Optional[float] = -1,
     why_remembered: Optional[str] = "",
@@ -48,6 +49,7 @@ async def dispatch(
     if source_bucket is None: source_bucket = ""
     if valence is None: valence = -1
     if arousal is None: arousal = -1
+    if name is None: name = ""
     if why_remembered is None: why_remembered = ""
     why_remembered = str(why_remembered).strip()[:500]
     if rt.mark_op:
@@ -110,6 +112,7 @@ async def dispatch(
         result = await store_feel(
             content=content,
             extra_tags=extra_tags,
+            name=name,
             valence=valence,
             arousal=arousal,
             source_bucket=source_bucket,
@@ -131,6 +134,7 @@ async def dispatch(
         content=content,
         extra_tags=extra_tags,
         importance=importance,
+        name=name,
         valence=valence,
         arousal=arousal,
         why_remembered=why_remembered,

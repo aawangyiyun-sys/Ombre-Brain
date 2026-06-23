@@ -435,15 +435,28 @@ class Dehydrator:
 
     @staticmethod
     def _strip_md_fence(raw: str) -> str:
-        """剥掉 LLM 偶尔会包的 ```...``` 代码块外壳。
+        """从可能含 markdown 包裹或前缀文字的字符串里提取 JSON。
 
         DeepSeek / Gemini 在被要求"返回纯 JSON"时仍偶尔把 JSON 包进
-        ```json\n{...}\n``` 里。三处 JSON 解析都得做这层剥离，
-        所以统一抽到这里。原始字符串不含围栏时原样返回。
+        ```json\n{...}\n``` 里，或在 JSON 前加一段说明文字。
         """
         cleaned = raw.strip()
-        if cleaned.startswith("```"):
-            cleaned = cleaned.split("\n", 1)[-1].rsplit("```", 1)[0]
+        if "```" in cleaned:
+            match = re.search(r'```(?:json)?\s*([\s\S]*?)```', cleaned)
+            if match:
+                return match.group(1).strip()
+        arr_idx = cleaned.find('[')
+        obj_idx = cleaned.find('{')
+        if arr_idx == -1 and obj_idx == -1:
+            return cleaned
+        if arr_idx != -1 and (obj_idx == -1 or arr_idx < obj_idx):
+            ridx = cleaned.rfind(']')
+            if ridx > arr_idx:
+                return cleaned[arr_idx:ridx + 1]
+        if obj_idx != -1:
+            ridx = cleaned.rfind('}')
+            if ridx > obj_idx:
+                return cleaned[obj_idx:ridx + 1]
         return cleaned
 
     @staticmethod

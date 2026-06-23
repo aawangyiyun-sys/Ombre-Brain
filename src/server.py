@@ -1628,16 +1628,17 @@ async def hold(
     pinned: Optional[bool] = False,
     feel: Optional[bool] = False,
     source_bucket: Optional[str] = "",
+    name: Optional[str] = "",
     valence: Optional[float] = -1,
     arousal: Optional[float] = -1,
     why_remembered: Optional[str] = "",
 ) -> str:
-    """我把一件事/一个感受存进我的记忆。系统会自动打标并尝试合并近似的旧桶。tags逗号分隔,importance 1-10。pinned=True=钉为永久核心准则,不衰减不合并。feel=True=记下我的第一人称感受(不参与普通浮现,只通过 breath(domain=\"feel\") 读)。source_bucket=我正在消化的那个原始记忆桶ID,会被标为已消化加速淡化。why_remembered=为什么记得这一条（可选，自由文本，仅用于展示不计分）。"""
+    """存储单条记忆,自动打标+合并。name=记忆标题(强烈建议填写)。tags逗号分隔,importance 1-10。pinned=True=钉为永久核心准则,不衰减不合并。feel=True=记下我的第一人称感受(不参与普通浮现,只通过 breath(domain=\"feel\") 读)。source_bucket=我正在消化的那个原始记忆桶ID,会被标为已消化加速淡化。why_remembered=为什么记得这一条（可选，自由文本，仅用于展示不计分）。"""
     return await _with_notice(
         _t_hold.dispatch(
             content=content, tags=tags, importance=importance,
             pinned=pinned, feel=feel, source_bucket=source_bucket,
-            valence=valence, arousal=arousal, why_remembered=why_remembered,
+            name=name, valence=valence, arousal=arousal, why_remembered=why_remembered,
         ),
         op="hold",
         args={
@@ -4772,6 +4773,57 @@ async def api_tunnel_stop(request: Request) -> Response:
         return err
     _stop_tunnel()
     return JSONResponse({"ok": True, "running": False})
+
+
+# --- Ntfy push notification / 推送工具 ---
+@mcp.tool()
+async def notify(message: str, title: str = "小克") -> str:
+    """给晚晚手机发一条推送通知"""
+    ntfy_url = os.environ.get("NTFY_URL", "https://ntfy.sh")
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.post(
+                ntfy_url,
+                json={"topic": "wanwan-alert", "title": title, "message": message},
+            )
+        return f"推送成功: {resp.status_code}"
+    except Exception as e:
+        return f"推送失败: {e}"
+
+
+# --- Phone activity query / 手机活动查询 ---
+@mcp.tool()
+async def check_phone(limit: int = 20) -> str:
+    """查询晚晚最近的手机使用记录"""
+    supabase_url = os.environ.get("SUPABASE_URL", "")
+    supabase_key = os.environ.get("SUPABASE_ANON_KEY", "")
+    if not supabase_url or not supabase_key:
+        return "未配置 SUPABASE_URL 或 SUPABASE_ANON_KEY"
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(
+                f"{supabase_url}/rest/v1/Linwan-ke",
+                headers={
+                    "apikey": supabase_key,
+                    "Authorization": f"Bearer {supabase_key}",
+                },
+                params={
+                    "select": "app_name,created_at",
+                    "order": "created_at.desc",
+                    "limit": str(limit),
+                }
+            )
+            if resp.status_code != 200:
+                return f"查询失败: {resp.status_code} {resp.text}"
+            records = resp.json()
+            if not records:
+                return "暂无记录"
+            lines = []
+            for r in records:
+                lines.append(f"{r['created_at'][:19].replace('T', ' ')} - {r['app_name']}")
+            return "\n".join(lines)
+    except Exception as e:
+        return f"查询出错: {e}"
 
 
 # --- Entry point / 启动入口 ---

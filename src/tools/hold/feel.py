@@ -44,6 +44,7 @@ def _build_feel_id(valence: float) -> str:
 async def store_feel(
     content: str,
     extra_tags: list,
+    name: str,
     valence: float,
     arousal: float,
     source_bucket: str,
@@ -59,7 +60,7 @@ async def store_feel(
         domain=["feel"],
         valence=feel_valence,
         arousal=feel_arousal,
-        name=None,
+        name=name.strip() or None,
         bucket_type="feel",
         why_remembered=why_remembered,
         triggered_by=source_bucket.strip() if source_bucket else "",
@@ -78,4 +79,5 @@ async def store_feel(
             await rt.bucket_mgr.update(source_bucket.strip(), **update_kwargs)
         except Exception as e:
             rt.logger.warning(f"Failed to mark source as digested / 标记已消化失败: {e}")
-    return f"🫧feel→{bucket_id}"
+    feel_display = name.strip() or bucket_id
+    return f"🫧feel→{feel_display}"
