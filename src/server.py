@@ -4903,7 +4903,12 @@ if __name__ == "__main__":
 
         # MCP Bearer token auth — pure ASGI middleware (no response buffering)
         # BaseHTTPMiddleware buffers SSE streams and breaks MCP tool listing
+        # Set OMBRE_MCP_NO_AUTH=1 to disable OAuth (e.g. when behind a private network)
         import json as _json_mw
+
+        _mcp_auth_disabled = os.environ.get("OMBRE_MCP_NO_AUTH", "").strip() in ("1", "true", "yes")
+        if _mcp_auth_disabled:
+            logger.info("MCP OAuth disabled via OMBRE_MCP_NO_AUTH")
 
         class _MCPAuthMiddleware:
             def __init__(self, app):
@@ -4912,7 +4917,7 @@ if __name__ == "__main__":
             async def __call__(self, scope, receive, send):
                 if scope["type"] == "http":
                     path = scope.get("path", "")
-                    if path.startswith("/mcp"):
+                    if path.startswith("/mcp") and not _mcp_auth_disabled:
                         headers = {k.lower(): v for k, v in scope.get("headers", [])}
                         auth = headers.get(b"authorization", b"").decode("latin-1")
                         if not (auth.startswith("Bearer ") and _is_valid_mcp_token(auth[7:])):
