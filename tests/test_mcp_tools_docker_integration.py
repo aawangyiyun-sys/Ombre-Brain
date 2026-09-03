@@ -39,6 +39,8 @@ EXPECTED_TOOLS = {
     "letter_lock_update",
     "letter_read",
     "feel",
+    "notify",
+    "check_phone",
     "I",
     "dream",
 }
@@ -58,6 +60,8 @@ EXPECTED_TOOL_ORDER = (
     "letter_lock_update",
     "letter_read",
     "feel",
+    "notify",
+    "check_phone",
     "I",
 )
 
@@ -158,6 +162,8 @@ EXPECTED_TOOL_PROPERTIES = {
     "letter_lock_update": {"letter_id", "lock_type", "unlock_date"},
     "letter_read": {"query", "limit", "author", "date_from", "date_to"},
     "feel": {"query", "max_tokens"},
+    "notify": {"message", "title"},
+    "check_phone": {"limit"},
     # supersedes：3.6.6 的「声明取代即挂起旧条目」。
     "I": {"content", "aspect", "read", "limit", "promote", "supersedes"},
     "dream": {"window_hours"},
@@ -171,6 +177,7 @@ EXPECTED_REQUIRED_PROPERTIES = {
     "release": {"bucket_id"},
     "plan": {"content"},
     "feel": {"query"},
+    "notify": {"message"},
     "letter_write": {"author", "content"},
     "letter_lock_update": {"letter_id", "lock_type"},
 }
