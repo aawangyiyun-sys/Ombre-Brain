@@ -34,3 +34,22 @@
 
 - 本轮基于上游 `3.6.12`。
 - 记忆数据仍位于持久化 Volume，不把任何 buckets、密钥或个人记忆提交到代码仓库。
+
+## 下次升级检查清单
+
+1. **从真实 Git 仓库同步，不从 GitHub 源码 ZIP 重新初始化仓库。**
+   上游用 `.gitattributes export-ignore` 排除发布归档中的源码文件；解压后重新
+   `git add` 还会受 `.gitignore` 影响，漏掉上游已经跟踪的文件。本轮因此先后漏掉
+   `requirements.txt`、`.claude/settings.json`、`rule.md` 和
+   `tools/diagnose_permanent_reads.py`。
+2. **提交前比较完整受控文件树。** 用 `git ls-tree -r --name-only` 对比上游基线与
+   定制分支；除本文件明确记录的 `.github/workflows/docker-publish.yml` 外，不应有
+   无说明的缺失文件，并保留上游文件模式。
+3. **新增或保留 MCP 工具时同步全部契约。** 除实现本身外，还要检查严格 schema、
+   公共工具契约、工具数量、README，以及
+   `tests/test_mcp_tools_docker_integration.py` 中的工具集合、顺序、属性和必填字段。
+   本轮容器测试发现该文件仍把上游 16 个工具写死，现已按 18 个工具更新。
+4. **重新生成并校验 `update_manifest.json`。**
+5. **先跑完整本地测试，再等待 GitHub Actions 的 Python、静态检查、安全审计、
+   Docker MCP 与 Docker Web 集成全部通过。** CI 未全绿前不合并到 `main`，避免
+   Zeabur 自动部署未验证版本。
